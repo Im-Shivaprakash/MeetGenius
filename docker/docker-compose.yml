@@ -1,0 +1,55 @@
+services:
+  frontend:
+
+    build:
+      context: ../frontend
+    ports:
+      - "${PORT:-5173}:5173"
+    depends_on:
+      - server
+      - spawner
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - surge
+
+  server:
+
+    build:
+      context: ../server
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    env_file:
+      - ../frontend/.env
+    networks:
+      - surge
+    volumes:
+      - ../server:/app
+      - /app/node_modules
+
+    command: "npm run dev"
+
+  spawner:
+    build:
+      context: ../spawner
+      dockerfile: ../spawner/Dockerfile
+    volumes:
+      - ../spawner:/app
+    networks:
+      - surge
+    ports:
+      - "${SPAWNER_PORT:-3000}:3000"
+    environment:
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - DISPLAY=:99
+      - NODE_ENV=development
+      - DBUS_SESSION_BUS_ADDRESS=/dev/null
+
+    restart: unless-stopped
+
+
+networks:
+  surge:
+    driver: bridge
